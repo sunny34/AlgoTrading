@@ -1,0 +1,3 @@
+numpa
+pandas
+pandas-ta
