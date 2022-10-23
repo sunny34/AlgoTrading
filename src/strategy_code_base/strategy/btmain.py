@@ -1,39 +1,58 @@
 import datetime
 import backtrader as bt
 from strategies import *
+import pandas as pd
+cerebro = bt.Cerebro()
 
-cerebro = bt.Cerebro(optreturn=False)
+# Add a strategy
+cerebro.addstrategy(TestStrategy)
 
-# Set data parameters and add to Cerebro
-data = bt.feeds.YahooFinanceCSVData(
-    dataname='TSLA.csv',
-    fromdate=datetime.datetime(2016, 1, 1),
-    todate=datetime.datetime(2017, 12, 25))
-# settings for out-of-sample data
-# fromdate=datetime.datetime(2018, 1, 1),
-# todate=datetime.datetime(2019, 12, 25))
+# Datas are in a subfolder of the samples. Need to find where the script is
+# because it could have been called from anywhere
+modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
+datapath = "/home/sunny/Downloads/Telegram Desktop/2018-08-30.csv"
 
+df = pd.read_csv(filepath_or_buffer=datapath)
+df["0"] = pd.to_datetime(df["0"]).dt.strftime('%Y-%m-%d %H:%M:%S')
+
+df.to_csv("mod_file.csv", index=False)
+# Create a Data Feed
+data = bt.feeds.GenericCSVData(
+    dataname="mod_file.csv",
+    # Do not pass values before this date
+    # fromdate=datetime.datetime(2000, 1, 1),
+    # Do not pass values before this date
+    # todate=datetime.datetime(2000, 12, 31),
+    # Do not pass values after this date
+    reverse=False)
+
+# Add the Data Feed to Cerebro
 cerebro.adddata(data)
 
-# Add strategy to Cerebro
-cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpe_ratio')
-cerebro.optstrategy(MAcrossover, pfast=range(5, 20), pslow=range(50, 100))
+# Set our desired cash start
+cerebro.broker.setcash(100000.0)
 
-# Default position size
-cerebro.addsizer(bt.sizers.SizerFix, stake=3)
+# Print out the starting conditions
+print('Starting Portfolio Value: %.2f' % cerebro.broker.getvalue())
+
+# Run over everything
+# cerebro.run()
+#
+# # Print out the final result
+# print('Final Portfolio Value: %.2f' % cerebro.broker.getvalue())
 
 if __name__ == '__main__':
     optimized_runs = cerebro.run()
-
-    final_results_list = []
-    for run in optimized_runs:
-        for strategy in run:
-            PnL = round(strategy.broker.get_value() - 10000, 2)
-            sharpe = strategy.analyzers.sharpe_ratio.get_analysis()
-            final_results_list.append([strategy.params.pfast,
-                                       strategy.params.pslow, PnL, sharpe['sharperatio']])
-
-    sort_by_sharpe = sorted(final_results_list, key=lambda x: x[3],
-                            reverse=True)
-    for line in sort_by_sharpe[:5]:
-        print(line)
+    print('Final Portfolio Value: %.2f' % cerebro.broker.getvalue())
+    # final_results_list = []
+    # for run in optimized_runs:
+    #     for strategy in run:
+    #         PnL = round(strategy.broker.get_value() - 10000, 2)
+    #         sharpe = strategy.analyzers.sharpe_ratio.get_analysis()
+    #         final_results_list.append([strategy.params.pfast,
+    #                                    strategy.params.pslow, PnL, sharpe['sharperatio']])
+    #
+    # sort_by_sharpe = sorted(final_results_list, key=lambda x: x[3],
+    #                         reverse=True)
+    # for line in sort_by_sharpe[:5]:
+    #     print(line)
